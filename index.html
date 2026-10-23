@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Calendario del Centro</title>
+<meta name="theme-color" content="#0f6b5e">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='10' width='52' height='48' rx='10' fill='%230f6b5e'/%3E%3Crect x='6' y='10' width='52' height='14' rx='6' fill='%23094c43'/%3E%3Crect x='28' y='31' width='8' height='20' rx='2' fill='white'/%3E%3Crect x='22' y='37' width='20' height='8' rx='2' fill='white'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230f6b5e'/%3E%3Crect x='28' y='18' width='8' height='28' rx='2' fill='white'/%3E%3Crect x='18' y='28' width='28' height='8' rx='2' fill='white'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root{
+  --bg:#f3f6f5; --surface:#ffffff; --fg:#17302c; --muted:#5c706c; --line:#d6e0dd;
+  --accent:#0f6b5e; --accent-fg:#ffffff; --today:#e3f1ee;
+  --t-guardia:#c2410c; --t-vacaciones:#2563a8; --t-reunion:#0f6b5e; --t-formacion:#7c4bb3; --t-otro:#6b7280;
+  --danger:#b42318;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0f1a18; --surface:#162523; --fg:#e4efec; --muted:#93a8a3; --line:#2a3d3a;
+  --accent:#4cc3b0; --accent-fg:#06201c; --today:#1d3632;
+  --t-guardia:#f08a5d; --t-vacaciones:#6aa8ec; --t-reunion:#4cc3b0; --t-formacion:#b896e6; --t-otro:#a3abb7;
+  --danger:#f2796d; color-scheme:dark;
+}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:max(16px,env(safe-area-inset-top,0px));padding-bottom:max(40px,env(safe-area-inset-bottom,0px))}
+.wrap{max-width:1080px;margin:0 auto;display:grid;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+h1{font-family:var(--f-display);font-size:clamp(28px,6vw,40px);line-height:1;margin:4px 0 0;text-transform:capitalize}
+.nav{display:flex;gap:6px}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 14px;min-height:40px}
+button:disabled{opacity:.6;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:700}
+button.danger{color:var(--danger);border-color:var(--danger);background:transparent}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--c)}
+.main{display:grid;gap:20px;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);align-items:start}
+@media (max-width:820px){.main{grid-template-columns:minmax(0,1fr)}}
+.cal{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.dow,.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.dow div{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:10px 8px;border-bottom:1px solid var(--line)}
+.cell{min-height:92px;padding:6px;border:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);text-align:left;border-radius:0;background:transparent;display:flex;flex-direction:column;gap:3px;min-width:0}
+.cell:nth-child(7n){border-right:0}
+.cell.out{color:var(--muted);opacity:.55}
+.cell.today .num{background:var(--accent);color:var(--accent-fg)}
+.cell.sel{background:var(--today)}
+.num{font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;width:26px;height:26px;display:grid;place-items:center;border-radius:50%}
+.chip{font-size:12px;line-height:1.25;padding:2px 6px;border-radius:5px;background:color-mix(in srgb,var(--c) 16%,transparent);border-left:3px solid var(--c);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.more{font-size:12px;color:var(--muted)}
+.dots{display:none;gap:3px;flex-wrap:wrap}
+@media (max-width:560px){
+  .cell{min-height:58px;align-items:center;padding:4px 2px}
+  .chip,.more{display:none}
+  .dots{display:flex;justify-content:center}
+  .dots .dot{width:7px;height:7px}
+}
+aside{display:grid;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px}
+h2{font-family:var(--f-display);font-size:20px;margin:0}
+h2::first-letter{text-transform:uppercase}
+.list{display:grid;gap:8px;list-style:none;margin:0;padding:0}
+.item{display:grid;grid-template-columns:4px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.bar{align-self:stretch;border-radius:2px;background:var(--c)}
+.item b{display:block;overflow-wrap:anywhere}
+.meta{font-size:13px;color:var(--muted)}
+.empty{color:var(--muted);font-size:15px;margin:0}
+form{display:grid;gap:10px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:grid;gap:4px;font-size:13px;font-weight:700;color:var(--muted)}
+input,select{font:inherit;font-size:16px;font-weight:400;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px 10px;min-height:42px;width:100%}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.note{font-size:13px;color:var(--muted);margin:0}
+.banner{font-size:14px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:700;max-width:calc(100% - 32px);text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Calendario del Centro de Salud</div>
+      <h1 id="mes">&nbsp;</h1>
+    </div>
+    <div class="nav">
+      <button id="prev" aria-label="Mes anterior">‹</button>
+      <button id="hoy">Hoy</button>
+      <button id="next" aria-label="Mes siguiente">›</button>
+    </div>
+  </header>
+
+  <div class="legend" id="legend"></div>
+  <div class="banner" id="estado" hidden></div>
+
+  <div class="main">
+    <section class="cal" aria-label="Mes">
+      <div class="dow"><div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div></div>
+      <div class="grid" id="grid"></div>
+    </section>
+
+    <aside>
+      <div class="panel">
+        <h2 id="diaTitulo">Hoy</h2>
+        <ul class="list" id="diaLista"></ul>
+      </div>
+
+      <div class="panel">
+        <h2 id="formTitulo">Añadir al calendario</h2>
+        <form id="form" autocomplete="off">
+          <label>Qué es<input id="f-titulo" required maxlength="80" placeholder="Ej.: Guardia Dra. Martín"></label>
+          <div class="row">
+            <label>Tipo<select id="f-tipo"></select></label>
+            <label>Hora (opcional)<input id="f-hora" type="time"></label>
+          </div>
+          <div class="row">
+            <label>Desde<input id="f-inicio" type="date" required></label>
+            <label>Hasta (opcional)<input id="f-fin" type="date"></label>
+          </div>
+          <label>Tu nombre<input id="f-autor" maxlength="40" placeholder="Para saber quién lo apunta"></label>
+          <label id="pinLabel">PIN del centro<input id="f-pin" type="password" inputmode="text" placeholder="Te lo pide solo la primera vez"></label>
+          <div class="actions">
+            <button class="primary" type="submit" id="f-guardar">Guardar</button>
+            <button type="button" id="f-cancelar" hidden>Cancelar</button>
+            <button type="button" class="danger" id="f-borrar" hidden>Borrar</button>
+          </div>
+          <p class="note">Solo organización interna. No escribáis datos de pacientes.</p>
+        </form>
+      </div>
+    </aside>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+/* ================================================================
+   CONFIGURACIÓN: pega aquí los dos valores de Supabase
+   (Project Settings > API). La "anon public key" es pública por
+   diseño; la seguridad la ponen las reglas de la base de datos y el PIN.
+   ================================================================ */
+const SUPABASE_URL = "PEGA_AQUI_LA_PROJECT_URL";
+const SUPABASE_ANON_KEY = "PEGA_AQUI_LA_ANON_KEY";
+/* ================================================================ */
+
+const TIPOS={guardia:"Guardia",vacaciones:"Vacaciones",reunion:"Reunión",formacion:"Formación",otro:"Otro"};
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const hoyISO=iso(new Date());
+let cur=new Date(); cur.setDate(1);
+let sel=hoyISO, eventos=[], editId=null, sb=null;
+
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}};
+let pin=ls.get("cal_pin");
+$("f-autor").value=ls.get("cal_autor")||"";
+$("pinLabel").hidden=!!pin;
+
+$("legend").innerHTML=Object.entries(TIPOS).map(([k,v])=>`<span><i class="dot" style="--c:var(--t-${k})"></i>${v}</span>`).join("");
+$("f-tipo").innerHTML=Object.entries(TIPOS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
+$("f-inicio").value=sel;
+
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function delDia(d){return eventos.filter(e=>e.inicio<=d&&(e.fin||e.inicio)>=d).sort((a,b)=>(a.hora||"99").localeCompare(b.hora||"99"))}
+const fecha=d=>new Date(d+"T12:00");
+const fmtLargo=d=>fecha(d).toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});
+const fmtCorto=d=>fecha(d).toLocaleDateString("es-ES",{day:"numeric",month:"short"});
+
+function render(){
+  $("mes").textContent=cur.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
+  const start=new Date(cur); start.setDate(1-((cur.getDay()+6)%7));
+  let html="";
+  for(let i=0;i<42;i++){
+    const d=new Date(start); d.setDate(start.getDate()+i);
+    if(i===35&&d.getMonth()!==cur.getMonth())break;
+    const k=iso(d), evs=delDia(k);
+    const cls=["cell",d.getMonth()!==cur.getMonth()?"out":"",k===hoyISO?"today":"",k===sel?"sel":""].join(" ");
+    html+=`<button class="${cls}" data-d="${k}" aria-label="${fmtLargo(k)}, ${evs.length} eventos"><span class="num">${d.getDate()}</span>`+
+      evs.slice(0,3).map(e=>`<span class="chip" style="--c:var(--t-${e.tipo})">${e.hora?e.hora+" ":""}${esc(e.titulo)}</span>`).join("")+
+      (evs.length>3?`<span class="more">+${evs.length-3} más</span>`:"")+
+      `<span class="dots">${evs.slice(0,4).map(e=>`<i class="dot" style="--c:var(--t-${e.tipo})"></i>`).join("")}</span></button>`;
+  }
+  $("grid").innerHTML=html;
+  renderDia();
+}
+function renderDia(){
+  $("diaTitulo").textContent=sel===hoyISO?"Hoy, "+fecha(sel).toLocaleDateString("es-ES",{day:"numeric",month:"long"}):fmtLargo(sel);
+  const evs=delDia(sel);
+  $("diaLista").innerHTML=evs.length?evs.map(e=>{
+    const rango=e.fin&&e.fin!==e.inicio?`${fmtCorto(e.inicio)} – ${fmtCorto(e.fin)}`:"";
+    const meta=[TIPOS[e.tipo],e.hora,rango,e.autor?"Apuntado por "+esc(e.autor):""].filter(Boolean).join(" · ");
+    return `<li class="item"><span class="bar" style="--c:var(--t-${e.tipo})"></span><div><b>${esc(e.titulo)}</b><span class="meta">${meta}</span></div><button data-edit="${e.id}">Editar</button></li>`;
+  }).join(""):`<p class="empty">Nada apuntado este día. Usa el formulario para añadir algo.</p>`;
+  if(!editId)$("f-inicio").value=sel;
+}
+
+$("grid").addEventListener("click",e=>{const b=e.target.closest(".cell");if(!b)return;sel=b.dataset.d;render();});
+$("prev").onclick=()=>{cur.setMonth(cur.getMonth()-1);render();};
+$("next").onclick=()=>{cur.setMonth(cur.getMonth()+1);render();};
+$("hoy").onclick=()=>{cur=new Date();cur.setDate(1);sel=hoyISO;render();};
+
+$("diaLista").addEventListener("click",e=>{
+  const b=e.target.closest("[data-edit]");if(!b)return;
+  const ev=eventos.find(x=>x.id===b.dataset.edit);if(!ev)return;
+  editId=ev.id;
+  $("f-titulo").value=ev.titulo;$("f-tipo").value=ev.tipo;$("f-hora").value=ev.hora||"";
+  $("f-inicio").value=ev.inicio;$("f-fin").value=ev.fin||"";
+  $("formTitulo").textContent="Editar";$("f-cancelar").hidden=false;$("f-borrar").hidden=false;$("f-borrar").textContent="Borrar";
+  $("form").scrollIntoView({behavior:"smooth",block:"nearest"});$("f-titulo").focus();
+});
+function resetForm(){
+  editId=null;const autor=$("f-autor").value;$("form").reset();$("f-autor").value=autor;$("f-inicio").value=sel;
+  $("formTitulo").textContent="Añadir al calendario";$("f-cancelar").hidden=true;$("f-borrar").hidden=true;
+}
+$("f-cancelar").onclick=resetForm;
+
+function pinActual(){return pin||$("f-pin").value.trim();}
+function pinMalo(){pin=null;ls.set("cal_pin",null);$("pinLabel").hidden=false;$("f-pin").value="";$("f-pin").focus();toast("PIN incorrecto. Pídelo en el grupo.");}
+function pinBueno(p){if(!pin){pin=p;ls.set("cal_pin",p);$("pinLabel").hidden=true;$("f-pin").value="";}}
+const esPinMalo=err=>err&&(err.code==="28000"||/PIN incorrecto/i.test(err.message||""));
+
+let confirmBorrar=false;
+$("f-borrar").onclick=async()=>{
+  if(!sb)return;
+  const p=pinActual();if(!p){$("pinLabel").hidden=false;$("f-pin").focus();toast("Escribe el PIN del centro");return;}
+  if(!confirmBorrar){confirmBorrar=true;$("f-borrar").textContent="¿Seguro? Pulsa otra vez";setTimeout(()=>{confirmBorrar=false;if(!$("f-borrar").hidden)$("f-borrar").textContent="Borrar";},4000);return;}
+  confirmBorrar=false;
+  const {error}=await sb.rpc("borrar_evento",{p_pin:p,p_id:editId});
+  if(error){esPinMalo(error)?pinMalo():toast("No se pudo borrar. Revisa la conexión.");return;}
+  pinBueno(p);toast("Borrado");resetForm();cargar();
+};
+
+$("form").addEventListener("submit",async e=>{
+  e.preventDefault();if(!sb)return;
+  const p=pinActual();if(!p){$("pinLabel").hidden=false;$("f-pin").focus();toast("Escribe el PIN del centro");return;}
+  const inicio=$("f-inicio").value, fin=$("f-fin").value||null;
+  if(fin&&fin<inicio){toast("La fecha «Hasta» es anterior a «Desde»");return;}
+  const titulo=$("f-titulo").value.trim();if(!titulo)return;
+  const autor=$("f-autor").value.trim();ls.set("cal_autor",autor);
+  const original=editId?eventos.find(x=>x.id===editId):null;
+  $("f-guardar").disabled=true;
+  const {error}=await sb.rpc("guardar_evento",{p_pin:p,p_id:editId,p_titulo:titulo,p_tipo:$("f-tipo").value,
+    p_inicio:inicio,p_fin:fin,p_hora:$("f-hora").value||"",p_autor:original?(original.autor||autor):autor});
+  $("f-guardar").disabled=false;
+  if(error){esPinMalo(error)?pinMalo():toast("No se pudo guardar. Revisa la conexión e inténtalo de nuevo.");return;}
+  pinBueno(p);toast(editId?"Cambios guardados":"Añadido");
+  sel=inicio;const d=fecha(inicio);cur=new Date(d.getFullYear(),d.getMonth(),1);resetForm();cargar();
+});
+
+let tt;function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,3500);}
+function estado(m){const b=$("estado");b.textContent=m;b.hidden=!m;}
+
+async function cargar(){
+  const {data,error}=await sb.from("eventos").select("id,titulo,tipo,inicio,fin,hora,autor").order("inicio").limit(5000);
+  if(error){estado("No se pudo cargar el calendario. Revisa la conexión y recarga la página.");return;}
+  estado("");eventos=data||[];render();
+}
+
+render();
+if(SUPABASE_URL.startsWith("PEGA_")||!window.supabase){
+  estado(!window.supabase?"No se pudo cargar la página por completo. Revisa la conexión y recarga.":"Falta configurar la conexión con la base de datos (ver la guía de instalación).");
+}else{
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false}});
+  estado("Cargando calendario…");
+  cargar();
+  let t;const recargar=()=>{clearTimeout(t);t=setTimeout(cargar,300);};
+  sb.channel("eventos").on("postgres_changes",{event:"*",schema:"public",table:"eventos"},recargar).subscribe();
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)recargar();});
+}
+</script>
+</body>
+</html>
