@@ -88,6 +88,10 @@ h2::first-letter{text-transform:uppercase}
 .bar{align-self:stretch;background:var(--c)}
 .item b{display:block;overflow-wrap:anywhere}
 .meta{font-size:13px;color:var(--muted)}
+.join{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-size:14px;font-weight:700;color:var(--blue);text-decoration:none;border:1px solid var(--blue);border-radius:3px;padding:5px 10px}
+.join:hover{background:color-mix(in srgb,var(--blue) 10%,transparent)}
+.join:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.hint{font-size:12px;font-weight:400;color:var(--muted)}
 .empty{color:var(--muted);font-size:15px;margin:0}
 form{display:grid;gap:10px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -155,6 +159,7 @@ footer .inner{padding-block:16px;font-size:13px;color:var(--muted);display:grid;
             <label>Desde<input id="f-inicio" type="date" required></label>
             <label>Hasta (opcional)<input id="f-fin" type="date"></label>
           </div>
+          <label id="enlaceLabel" hidden>Enlace de la reunión (opcional)<input id="f-enlace" type="url" inputmode="url" maxlength="1000" placeholder="https://teams.microsoft.com/…"><span class="hint">Pega el enlace de Teams, Webex u otra plataforma.</span></label>
           <label>Tu nombre<input id="f-autor" maxlength="40" placeholder="Para saber quién lo apunta"></label>
           <label id="pinLabel">PIN del centro<input id="f-pin" type="password" inputmode="text" placeholder="Te lo pide solo la primera vez"></label>
           <div class="actions">
@@ -204,8 +209,11 @@ $("pinLabel").hidden=!!pin;
 $("legend").innerHTML=Object.entries(TIPOS).map(([k,v])=>`<span><i class="dot" style="--c:var(--t-${k})"></i>${v}</span>`).join("");
 $("f-tipo").innerHTML=Object.entries(TIPOS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
 $("f-inicio").value=sel;
+$("f-tipo").addEventListener("change",verEnlace);
 
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function enlaceSeguro(u){return typeof u==="string"&&/^https:\/\/\S+$/i.test(u.trim())}
+function verEnlace(){$("enlaceLabel").hidden=$("f-tipo").value!=="reunion"}
 function delDia(d){return eventos.filter(e=>e.inicio<=d&&(e.fin||e.inicio)>=d).sort((a,b)=>(a.hora||"99").localeCompare(b.hora||"99"))}
 const fecha=d=>new Date(d+"T12:00");
 const fmtLargo=d=>fecha(d).toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});
@@ -234,7 +242,7 @@ function renderDia(){
   $("diaLista").innerHTML=evs.length?evs.map(e=>{
     const rango=e.fin&&e.fin!==e.inicio?`${fmtCorto(e.inicio)} – ${fmtCorto(e.fin)}`:"";
     const meta=[TIPOS[e.tipo],e.hora,rango,e.autor?"Apuntado por "+esc(e.autor):""].filter(Boolean).join(" · ");
-    return `<li class="item"><span class="bar" style="--c:var(--t-${e.tipo})"></span><div><b>${esc(e.titulo)}</b><span class="meta">${meta}</span></div><button data-edit="${e.id}">Editar</button></li>`;
+    return `<li class="item"><span class="bar" style="--c:var(--t-${e.tipo})"></span><div><b>${esc(e.titulo)}</b><span class="meta">${meta}</span>${enlaceSeguro(e.enlace)?`<br><a class="join" href="${esc(e.enlace)}" target="_blank" rel="noopener noreferrer">Unirse a la reunión ↗</a>`:""}</div><button data-edit="${e.id}">Editar</button></li>`;
   }).join(""):`<p class="empty">Nada apuntado este día. Usa el formulario para añadir algo.</p>`;
   if(!editId)$("f-inicio").value=sel;
 }
@@ -248,13 +256,13 @@ $("diaLista").addEventListener("click",e=>{
   const b=e.target.closest("[data-edit]");if(!b)return;
   const ev=eventos.find(x=>x.id===b.dataset.edit);if(!ev)return;
   editId=ev.id;
-  $("f-titulo").value=ev.titulo;$("f-tipo").value=ev.tipo;$("f-hora").value=ev.hora||"";
+  $("f-titulo").value=ev.titulo;$("f-tipo").value=ev.tipo;$("f-hora").value=ev.hora||"";$("f-enlace").value=ev.enlace||"";verEnlace();
   $("f-inicio").value=ev.inicio;$("f-fin").value=ev.fin||"";
   $("formTitulo").textContent="Editar";$("f-cancelar").hidden=false;$("f-borrar").hidden=false;$("f-borrar").textContent="Borrar";
   $("form").scrollIntoView({behavior:"smooth",block:"nearest"});$("f-titulo").focus();
 });
 function resetForm(){
-  editId=null;const autor=$("f-autor").value;$("form").reset();$("f-autor").value=autor;$("f-inicio").value=sel;
+  editId=null;const autor=$("f-autor").value;$("form").reset();$("f-autor").value=autor;$("f-inicio").value=sel;verEnlace();
   $("formTitulo").textContent="Añadir al calendario";$("f-cancelar").hidden=true;$("f-borrar").hidden=true;
 }
 $("f-cancelar").onclick=resetForm;
@@ -281,11 +289,15 @@ $("form").addEventListener("submit",async e=>{
   const inicio=$("f-inicio").value, fin=$("f-fin").value||null;
   if(fin&&fin<inicio){toast("La fecha «Hasta» es anterior a «Desde»");return;}
   const titulo=$("f-titulo").value.trim();if(!titulo)return;
+  const tipo=$("f-tipo").value;
+  let enlace=tipo==="reunion"?$("f-enlace").value.trim():"";
+  if(enlace&&!/^https?:\/\//i.test(enlace))enlace="https://"+enlace;
+  if(enlace&&!enlaceSeguro(enlace)){toast("El enlace debe empezar por https://");$("f-enlace").focus();return;}
   const autor=$("f-autor").value.trim();ls.set("cal_autor",autor);
   const original=editId?eventos.find(x=>x.id===editId):null;
   $("f-guardar").disabled=true;
-  const {error}=await sb.rpc("guardar_evento",{p_pin:p,p_id:editId,p_titulo:titulo,p_tipo:$("f-tipo").value,
-    p_inicio:inicio,p_fin:fin,p_hora:$("f-hora").value||"",p_autor:original?(original.autor||autor):autor});
+  const {error}=await sb.rpc("guardar_evento",{p_pin:p,p_id:editId,p_titulo:titulo,p_tipo:tipo,
+    p_inicio:inicio,p_fin:fin,p_hora:$("f-hora").value||"",p_autor:original?(original.autor||autor):autor,p_enlace:enlace});
   $("f-guardar").disabled=false;
   if(error){esPinMalo(error)?pinMalo():toast("No se pudo guardar. Revisa la conexión e inténtalo de nuevo.");return;}
   pinBueno(p);toast(editId?"Cambios guardados":"Añadido");
@@ -296,7 +308,7 @@ let tt;function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clear
 function estado(m){const b=$("estado");b.textContent=m;b.hidden=!m;}
 
 async function cargar(){
-  const {data,error}=await sb.from("eventos").select("id,titulo,tipo,inicio,fin,hora,autor").order("inicio").limit(5000);
+  const {data,error}=await sb.from("eventos").select("id,titulo,tipo,inicio,fin,hora,autor,enlace").order("inicio").limit(5000);
   if(error){estado("No se pudo cargar el calendario. Revisa la conexión y recarga la página.");return;}
   estado("");eventos=data||[];render();
 }
@@ -315,4 +327,3 @@ if(SUPABASE_URL.startsWith("PEGA_")||!window.supabase){
 </script>
 </body>
 </html>
-
